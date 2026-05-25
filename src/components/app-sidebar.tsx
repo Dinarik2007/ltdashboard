@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Share2, Users, ShoppingBag, Wallet, CheckSquare, Calendar as CalendarIcon, Package, Sprout, LogOut,
+  LayoutDashboard, Share2, Users, ShoppingBag, Wallet, CheckSquare, Calendar as CalendarIcon, Package, Sprout, LogOut, LogIn,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -21,7 +21,7 @@ const items = [
   { title: "SKU", url: "/sku", icon: Package },
 ];
 
-export function AppSidebar({ userEmail }: { userEmail?: string }) {
+export function AppSidebar({ userEmail }: { userEmail?: string | null }) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
@@ -34,7 +34,8 @@ export function AppSidebar({ userEmail }: { userEmail?: string }) {
     navigate({ to: "/auth" });
   };
 
-  const initials = (userEmail ?? "?").slice(0, 2).toUpperCase();
+  const isGuest = !userEmail;
+  const initials = (userEmail ?? "G").slice(0, 2).toUpperCase();
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -103,26 +104,43 @@ export function AppSidebar({ userEmail }: { userEmail?: string }) {
         )}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border/60 p-3">
-        <div className="flex items-center gap-2.5">
-          <Avatar className="h-9 w-9 ring-2 ring-accent/30">
-            <AvatarFallback className="bg-accent text-accent-foreground text-[11px] font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-medium text-sidebar-foreground">{userEmail ?? "—"}</div>
-              <div className="text-[10px] text-sidebar-foreground/60">сотрудник</div>
-            </div>
-          )}
+        {isGuest ? (
           <button
-            onClick={handleLogout}
-            title="Выйти"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+            onClick={() => navigate({ to: "/auth" })}
+            className="flex w-full items-center gap-2.5 rounded-xl bg-sidebar-accent/60 px-3 py-2.5 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent"
           >
-            <LogOut className="h-4 w-4" />
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg gradient-leaf text-white">
+              <LogIn className="h-4 w-4" />
+            </span>
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold">Войти</div>
+                <div className="text-[10px] text-sidebar-foreground/60">для редактирования</div>
+              </div>
+            )}
           </button>
-        </div>
+        ) : (
+          <div className="flex items-center gap-2.5">
+            <Avatar className="h-9 w-9 ring-2 ring-accent/30">
+              <AvatarFallback className="bg-accent text-accent-foreground text-[11px] font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-xs font-medium text-sidebar-foreground">{userEmail}</div>
+                <div className="text-[10px] text-sidebar-foreground/60">сотрудник</div>
+              </div>
+            )}
+            <button
+              onClick={handleLogout}
+              title="Выйти"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
