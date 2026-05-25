@@ -1,11 +1,14 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Share2, Users, ShoppingBag, Wallet, CheckSquare, Calendar as CalendarIcon, Package, Sprout,
+  LayoutDashboard, Share2, Users, ShoppingBag, Wallet, CheckSquare, Calendar as CalendarIcon, Package, Sprout, LogOut,
 } from "lucide-react";
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar";
+import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -18,11 +21,20 @@ const items = [
   { title: "SKU", url: "/sku", icon: Package },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ userEmail }: { userEmail?: string }) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (path: string) => (path === "/" ? currentPath === "/" : currentPath.startsWith(path));
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Вы вышли из системы");
+    navigate({ to: "/auth" });
+  };
+
+  const initials = (userEmail ?? "?").slice(0, 2).toUpperCase();
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -90,6 +102,28 @@ export function AppSidebar() {
           </div>
         )}
       </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border/60 p-3">
+        <div className="flex items-center gap-2.5">
+          <Avatar className="h-9 w-9 ring-2 ring-accent/30">
+            <AvatarFallback className="bg-accent text-accent-foreground text-[11px] font-semibold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-xs font-medium text-sidebar-foreground">{userEmail ?? "—"}</div>
+              <div className="text-[10px] text-sidebar-foreground/60">сотрудник</div>
+            </div>
+          )}
+          <button
+            onClick={handleLogout}
+            title="Выйти"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }

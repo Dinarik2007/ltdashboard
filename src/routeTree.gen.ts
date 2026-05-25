@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppTasksRouteImport } from './routes/_app.tasks'
@@ -19,6 +20,11 @@ import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
 import { Route as AppBudgetsRouteImport } from './routes/_app.budgets'
 import { Route as AppBloggersRouteImport } from './routes/_app.bloggers'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -66,6 +72,7 @@ const AppBloggersRoute = AppBloggersRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/auth': typeof AuthRoute
   '/bloggers': typeof AppBloggersRoute
   '/budgets': typeof AppBudgetsRoute
   '/calendar': typeof AppCalendarRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AppTasksRoute
 }
 export interface FileRoutesByTo {
+  '/auth': typeof AuthRoute
   '/bloggers': typeof AppBloggersRoute
   '/budgets': typeof AppBudgetsRoute
   '/calendar': typeof AppCalendarRoute
@@ -87,6 +95,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRoute
   '/_app/bloggers': typeof AppBloggersRoute
   '/_app/budgets': typeof AppBudgetsRoute
   '/_app/calendar': typeof AppCalendarRoute
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/bloggers'
     | '/budgets'
     | '/calendar'
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/tasks'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/auth'
     | '/bloggers'
     | '/budgets'
     | '/calendar'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/auth'
     | '/_app/bloggers'
     | '/_app/budgets'
     | '/_app/calendar'
@@ -132,10 +144,18 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -228,6 +248,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
