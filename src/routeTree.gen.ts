@@ -10,32 +10,128 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppTasksRouteImport } from './routes/_app.tasks'
+import { Route as AppSocialRouteImport } from './routes/_app.social'
+import { Route as AppSkuRouteImport } from './routes/_app.sku'
+import { Route as AppMarketplacesRouteImport } from './routes/_app.marketplaces'
+import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
+import { Route as AppBudgetsRouteImport } from './routes/_app.budgets'
+import { Route as AppBloggersRouteImport } from './routes/_app.bloggers'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTasksRoute = AppTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSocialRoute = AppSocialRouteImport.update({
+  id: '/social',
+  path: '/social',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSkuRoute = AppSkuRouteImport.update({
+  id: '/sku',
+  path: '/sku',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMarketplacesRoute = AppMarketplacesRouteImport.update({
+  id: '/marketplaces',
+  path: '/marketplaces',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCalendarRoute = AppCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBudgetsRoute = AppBudgetsRouteImport.update({
+  id: '/budgets',
+  path: '/budgets',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBloggersRoute = AppBloggersRouteImport.update({
+  id: '/bloggers',
+  path: '/bloggers',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AppRoute
+  '/': typeof AppIndexRoute
+  '/bloggers': typeof AppBloggersRoute
+  '/budgets': typeof AppBudgetsRoute
+  '/calendar': typeof AppCalendarRoute
+  '/marketplaces': typeof AppMarketplacesRoute
+  '/sku': typeof AppSkuRoute
+  '/social': typeof AppSocialRoute
+  '/tasks': typeof AppTasksRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof AppRoute
+  '/bloggers': typeof AppBloggersRoute
+  '/budgets': typeof AppBudgetsRoute
+  '/calendar': typeof AppCalendarRoute
+  '/marketplaces': typeof AppMarketplacesRoute
+  '/sku': typeof AppSkuRoute
+  '/social': typeof AppSocialRoute
+  '/tasks': typeof AppTasksRoute
+  '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_app': typeof AppRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/bloggers': typeof AppBloggersRoute
+  '/_app/budgets': typeof AppBudgetsRoute
+  '/_app/calendar': typeof AppCalendarRoute
+  '/_app/marketplaces': typeof AppMarketplacesRoute
+  '/_app/sku': typeof AppSkuRoute
+  '/_app/social': typeof AppSocialRoute
+  '/_app/tasks': typeof AppTasksRoute
+  '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/bloggers'
+    | '/budgets'
+    | '/calendar'
+    | '/marketplaces'
+    | '/sku'
+    | '/social'
+    | '/tasks'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/_app'
+  to:
+    | '/bloggers'
+    | '/budgets'
+    | '/calendar'
+    | '/marketplaces'
+    | '/sku'
+    | '/social'
+    | '/tasks'
+    | '/'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/_app/bloggers'
+    | '/_app/budgets'
+    | '/_app/calendar'
+    | '/_app/marketplaces'
+    | '/_app/sku'
+    | '/_app/social'
+    | '/_app/tasks'
+    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AppRoute: typeof AppRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -47,11 +143,91 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/': {
+      id: '/_app/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tasks': {
+      id: '/_app/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AppTasksRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/social': {
+      id: '/_app/social'
+      path: '/social'
+      fullPath: '/social'
+      preLoaderRoute: typeof AppSocialRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/sku': {
+      id: '/_app/sku'
+      path: '/sku'
+      fullPath: '/sku'
+      preLoaderRoute: typeof AppSkuRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/marketplaces': {
+      id: '/_app/marketplaces'
+      path: '/marketplaces'
+      fullPath: '/marketplaces'
+      preLoaderRoute: typeof AppMarketplacesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/calendar': {
+      id: '/_app/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AppCalendarRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/budgets': {
+      id: '/_app/budgets'
+      path: '/budgets'
+      fullPath: '/budgets'
+      preLoaderRoute: typeof AppBudgetsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/bloggers': {
+      id: '/_app/bloggers'
+      path: '/bloggers'
+      fullPath: '/bloggers'
+      preLoaderRoute: typeof AppBloggersRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppBloggersRoute: typeof AppBloggersRoute
+  AppBudgetsRoute: typeof AppBudgetsRoute
+  AppCalendarRoute: typeof AppCalendarRoute
+  AppMarketplacesRoute: typeof AppMarketplacesRoute
+  AppSkuRoute: typeof AppSkuRoute
+  AppSocialRoute: typeof AppSocialRoute
+  AppTasksRoute: typeof AppTasksRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppBloggersRoute: AppBloggersRoute,
+  AppBudgetsRoute: AppBudgetsRoute,
+  AppCalendarRoute: AppCalendarRoute,
+  AppMarketplacesRoute: AppMarketplacesRoute,
+  AppSkuRoute: AppSkuRoute,
+  AppSocialRoute: AppSocialRoute,
+  AppTasksRoute: AppTasksRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  AppRoute: AppRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
