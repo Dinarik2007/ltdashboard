@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -56,6 +57,20 @@ function AuthPage() {
     else toast.success("Аккаунт создан. Вход выполнен.");
   };
 
+  const handleForgot = async () => {
+    if (!email) {
+      toast.error("Введите email и нажмите «Забыли пароль?» снова");
+      return;
+    }
+    setResetting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetting(false);
+    if (error) toast.error(error.message);
+    else toast.success("Письмо для сброса пароля отправлено на " + email);
+  };
+
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
       <div className="pointer-events-none absolute inset-0 -z-10">
@@ -84,6 +99,14 @@ function AuthPage() {
               <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl gradient-leaf text-primary-foreground shadow-md shadow-accent/30">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Войти"}
               </Button>
+              <button
+                type="button"
+                onClick={handleForgot}
+                disabled={resetting}
+                className="block w-full text-center text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
+              >
+                {resetting ? "Отправка…" : "Забыли пароль?"}
+              </button>
             </form>
           </TabsContent>
 
@@ -99,7 +122,7 @@ function AuthPage() {
         </Tabs>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Для теста регистрация открыта. Позже её можно закрыть и приглашать сотрудников вручную.
+          Дашборд можно <Link to="/" className="font-medium text-foreground hover:underline">смотреть без входа</Link>. Вход нужен для редактирования.
         </p>
       </div>
     </div>
