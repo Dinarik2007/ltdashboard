@@ -9,7 +9,6 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -73,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Dasboard of marketing" },
+      { name: "description", content: "Veridian Growth Hub is a modern marketing dashboard for fertilizer and garden product companies." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Dasboard of marketing" },
+      { property: "og:description", content: "Veridian Growth Hub is a modern marketing dashboard for fertilizer and garden product companies." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Dasboard of marketing" },
+      { name: "twitter:description", content: "Veridian Growth Hub is a modern marketing dashboard for fertilizer and garden product companies." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5eaab87b-ac79-4e3c-8709-600e6d38c9cd/id-preview-234b16aa--50e284ff-701f-41cc-a801-a5d6619cf1d3.lovable.app-1779716908251.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5eaab87b-ac79-4e3c-8709-600e6d38c9cd/id-preview-234b16aa--50e284ff-701f-41cc-a801-a5d6619cf1d3.lovable.app-1779716908251.png" },
     ],
     links: [
       {
@@ -121,7 +124,6 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
-      <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
 }
