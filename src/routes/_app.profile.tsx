@@ -9,8 +9,8 @@ import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { POSITION_LABELS, ROLE_LABELS } from "@/lib/tasks-types";
-import type { EmployeePosition } from "@/lib/tasks-types";
+import { ROLE_LABELS } from "@/lib/tasks-types";
+import type { PositionRow } from "@/lib/tasks-types";
 
 export const Route = createFileRoute("/_app/profile")({
   head: () => ({ meta: [{ title: "Профиль" }] }),
@@ -22,17 +22,22 @@ function ProfilePage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [position, setPosition] = useState<string>("none");
+  const [positions, setPositions] = useState<PositionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
-    supabase.from("profiles").select("*").eq("id", userId).maybeSingle().then(({ data }) => {
+    Promise.all([
+      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+      supabase.from("positions").select("*").order("label"),
+    ]).then(([{ data }, { data: pos }]) => {
       if (data) {
         setFullName(data.full_name ?? "");
         setPhone(data.phone ?? "");
         setPosition(data.position ?? "none");
       }
+      setPositions((pos ?? []) as PositionRow[]);
       setLoading(false);
     });
   }, [userId]);
@@ -56,7 +61,7 @@ function ProfilePage() {
     const { error } = await supabase.from("profiles").update({
       full_name: fullName.trim() || null,
       phone: phone.trim() || null,
-      position: position === "none" ? null : (position as EmployeePosition),
+      position: position === "none" ? null : position,
     }).eq("id", userId);
     setSaving(false);
     if (error) toast.error(error.message); else toast.success("Профиль обновлён");
@@ -80,10 +85,9 @@ function ProfilePage() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Не указана</SelectItem>
-                  <SelectItem value="marketolog">{POSITION_LABELS.marketolog}</SelectItem>
-                  <SelectItem value="product_manager">{POSITION_LABELS.product_manager}</SelectItem>
-                  <SelectItem value="smm_manager">{POSITION_LABELS.smm_manager}</SelectItem>
-                  <SelectItem value="designer">{POSITION_LABELS.designer}</SelectItem>
+                  {positions.map((p) => (
+                    <SelectItem key={p.id} value={p.key}>{p.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
