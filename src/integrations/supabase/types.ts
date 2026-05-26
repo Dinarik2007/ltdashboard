@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      positions: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          label: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          label: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          label?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -21,7 +42,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
-          position: Database["public"]["Enums"]["employee_position"] | null
+          position: string | null
           updated_at: string
         }
         Insert: {
@@ -30,7 +51,7 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
-          position?: Database["public"]["Enums"]["employee_position"] | null
+          position?: string | null
           updated_at?: string
         }
         Update: {
@@ -39,7 +60,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
-          position?: Database["public"]["Enums"]["employee_position"] | null
+          position?: string | null
           updated_at?: string
         }
         Relationships: []

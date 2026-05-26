@@ -1,7 +1,13 @@
 export type TaskStatus = "todo" | "in_progress" | "review" | "done";
 export type TaskPriority = "low" | "med" | "high";
-export type EmployeePosition = "marketolog" | "product_manager" | "smm_manager" | "designer";
+export type EmployeePosition = string;
 export type AppRole = "admin" | "editor" | "viewer";
+
+export interface PositionRow {
+  id: string;
+  key: string;
+  label: string;
+}
 
 export interface Task {
   id: string;
@@ -23,7 +29,7 @@ export interface Profile {
   email: string | null;
   full_name: string | null;
   phone: string | null;
-  position: EmployeePosition | null;
+  position: string | null;
 }
 
 export interface TaskComment {
@@ -64,7 +70,7 @@ export const PRIORITY_COLORS: Record<TaskPriority, string> = {
   low: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900",
 };
 
-export const POSITION_LABELS: Record<EmployeePosition, string> = {
+export const POSITION_LABELS: Record<string, string> = {
   marketolog: "Маркетолог",
   product_manager: "Продакт-менеджер",
   smm_manager: "SMM-менеджер",
