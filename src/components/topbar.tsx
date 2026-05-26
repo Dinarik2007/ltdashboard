@@ -18,6 +18,7 @@ const levelColor: Record<string, string> = {
 
 export function Topbar({ title, subtitle }: { title: string; subtitle?: string }) {
   const [period, setPeriod] = React.useState("30");
+  const { theme, toggleTheme } = useTheme();
   return (
     <header className="sticky top-0 z-30 flex flex-col gap-3 border-b border-border/60 bg-background/70 px-4 py-3 backdrop-blur-xl md:flex-row md:items-center md:justify-between md:px-8 md:py-4">
       <div className="flex items-center gap-3">
