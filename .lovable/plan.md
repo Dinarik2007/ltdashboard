@@ -1,91 +1,154 @@
-# Marketing Dashboard — Премиум SaaS для производителя удобрений
 
-Создаю современный marketing dashboard уровня 2026 года с тёмно-зелёной премиум-палитрой и light glassmorphism для садоводческого бренда.
+# План: Tasks → Supabase + Админка + Профили сотрудников
 
-## Дизайн-система
+## 1. База данных
 
-**Палитра (oklch в `src/styles.css`):**
-- Background: тёплый off-white `oklch(0.98 0.005 130)`
-- Primary (deep forest green): `oklch(0.32 0.06 150)`
-- Accent (fresh leaf): `oklch(0.62 0.15 145)`
-- Glass surfaces: white с blur + субтильная зелёная тень
-- Sidebar: глубокий тёмно-зелёный `oklch(0.22 0.04 150)` со светлым текстом
+### Профили и роли
 
-**Типографика:** Space Grotesk (заголовки) + Inter (body) — современная корпоративная пара.
+**`profiles`** (расширенный профиль сотрудника, 1:1 с auth.users):
+- `id` uuid PK = auth.users.id
+- `email` text
+- `full_name` text (ФИО)
+- `phone` text
+- `position` enum (`marketolog`, `product_manager`, `smm_manager`, `designer`) — nullable
+- `created_at`, `updated_at`
 
-**Эффекты:** `backdrop-blur-xl`, мягкие зелёные glow-shadows, плавные motion-анимации, ramp-in графиков.
+Автосоздание через триггер `on auth.users insert` → `handle_new_user()`.
 
-## Структура маршрутов (TanStack Router)
+**`app_role`** enum: `admin`, `editor`, `viewer`.
+
+**`user_roles`** (отдельная таблица — критично для безопасности):
+- `id`, `user_id` (FK auth.users), `role` app_role, UNIQUE(user_id, role)
+
+**Security definer функция** `has_role(_user_id, _role)`.
+
+**Bootstrap admin**: SQL вставит роль `admin` для пользователя с email `dgolub@lamatorf.ru` (если он уже зарегистрирован — сразу; если нет — создадим триггер, который при регистрации этого email сразу даст admin).
+
+**Дефолтная роль** новых пользователей: `viewer` (повышает админ).
+
+### Tasks
+
+**`tasks`**: id, title, description, status (`todo`/`in_progress`/`review`/`done`), priority (`low`/`med`/`high`), task_type, due_date, position int, assignee_id, created_by, created_at, updated_at.
+
+**`task_comments`**: id, task_id (cascade), user_id, comment, created_at.
+
+**`task_attachments`**: id, task_id (cascade), file_url, file_name, uploaded_by, created_at.
+
+**Storage bucket** `task-attachments` (приватный).
+
+**Realtime**: добавить tasks, task_comments, task_attachments в `supabase_realtime` + `REPLICA IDENTITY FULL`.
+
+**Триггер** `update_updated_at_column` на tasks и profiles.
+
+### RLS политики
+
+**profiles**:
+- SELECT: авторизованные видят все профили (нужно для отображения assignee)
+- UPDATE: пользователь может править свой профиль ИЛИ admin может править любой
+- INSERT/DELETE: только admin
+
+**user_roles**:
+- SELECT: авторизованные видят все роли (нужно для бейджа в UI)
+- INSERT/UPDATE/DELETE: только admin (`has_role(auth.uid(),'admin')`)
+
+**tasks / task_comments / task_attachments**:
+- SELECT: только авторизованные (`auth.uid() IS NOT NULL`)
+- INSERT/UPDATE/DELETE: `has_role(admin)` OR `has_role(editor)`
+- viewer — read-only
+
+**Storage `task-attachments`**:
+- SELECT/INSERT: авторизованные
+- DELETE: admin/editor
+
+## 2. Server functions (`src/lib/`)
+
+`tasks.functions.ts` (защищены `requireSupabaseAuth`, валидация Zod):
+- createTask, updateTask (включая status/position для DnD), deleteTask
+- addComment, deleteComment
+- addAttachment (запись метаданных), deleteAttachment
+
+`admin.functions.ts` (защищены `requireSupabaseAuth` + проверка `has_role(admin)` внутри):
+- listUsers — все profiles + их роли
+- assignRole(user_id, role), revokeRole(user_id, role)
+- updateProfile(user_id, {full_name, phone, position}) — для админа
+
+`profile.functions.ts`:
+- updateMyProfile({full_name, phone, position}) — для текущего пользователя
+
+## 3. Маршруты
+
+### Защита авторизацией
+
+Создать pathless layout `src/routes/_authenticated.tsx`:
+- `beforeLoad`: если нет сессии → `redirect('/auth')`
+
+Перенести защищённые роуты:
+- `src/routes/_app.tasks.tsx` → `src/routes/_app/_authenticated.tasks.tsx`
+  (или оставить под `_app` + добавить child-level `beforeLoad`)
+- Дашборд и остальные остаются публичными как сейчас.
+
+Простой вариант: внутри `_app.tasks.tsx` добавить компонентный гард → если нет сессии, показать заглушку «Войдите для доступа к задачам» + кнопка на /auth. Соответствует уже существующему гостевому паттерну в проекте.
+
+### Новые роуты
+
+- `src/routes/_app.admin.tsx` — админка (только admin, иначе 403)
+  - Таблица всех сотрудников: ФИО, email, телефон, должность, роли
+  - Действия: изменить роль (select admin/editor/viewer), редактировать должность/ФИО/телефон через модалку
+- `src/routes/_app.profile.tsx` — личный кабинет: ФИО, телефон, должность (read-only для viewer? — нет, свой профиль может править любой)
+
+Пункт «Админка» в sidebar показывается только если `has_role(admin)`. Пункт «Профиль» — всем авторизованным.
+
+## 4. UI Tasks (канбан)
+
+- Канбан 4 колонки, карточки tasks из БД через `useQuery` + realtime subscription (один канал на 3 таблицы → `invalidateQueries(['tasks'])`).
+- **Drag & drop** — `@dnd-kit/core` + `@dnd-kit/sortable`. Drop → `updateTask({status, position})`.
+- **Модалка создания/редактирования**: title, description, priority, status, due_date, assignee (select из profiles), task_type.
+- **Sheet деталей**: описание, activity timeline (комменты + системные события), форма комментария, секция вложений с превью (image → `<img>`, остальные → иконка).
+- **Avatar assignee** на карточке (инициалы из full_name или email).
+- **Цветные приоритеты** (High=rose, Med=amber, Low=emerald).
+- **Toast** (sonner) на все мутации.
+- Viewer (только просмотр): кнопки create/edit/delete disabled с тултипом.
+- Неавторизованные: видят заглушку с кнопкой Войти.
+
+## 5. Зависимости
 
 ```
-src/routes/
-  __root.tsx                — shell с QueryClientProvider
-  _app.tsx                  — layout с sidebar + topbar + Outlet
-  _app/index.tsx            — / → Dashboard (главная)
-  _app/social.tsx           — /social → Соцсети
-  _app/bloggers.tsx         — /bloggers → Блогеры
-  _app/marketplaces.tsx     — /marketplaces → Маркетплейсы
-  _app/budgets.tsx          — /budgets → Бюджеты
-  _app/tasks.tsx            — /tasks → Задачи
-  _app/calendar.tsx         — /calendar → Календарь
-  _app/sku.tsx              — /sku → SKU
+bun add @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities date-fns
 ```
 
-Каждый route получает свой `head()` с уникальными title/description.
+## 6. Удаление mock
 
-## Компоненты
+Удалить `tasks` и `TaskStatus` из `src/lib/mock-data.ts`.
 
-**Layout:**
-- `AppSidebar` — collapsible shadcn sidebar, тёмно-зелёный, иконки lucide (LayoutDashboard, Share2, Users, ShoppingBag, Wallet, CheckSquare, Calendar, Package), активный route подсвечен leaf-accent
-- `Topbar` — поиск, period picker (7д/30д/90д/custom DateRangePicker), notifications bell с popover-панелью, аватар
+## Структура файлов
 
-**Dashboard (главная):**
-- 4 KPI-карточки: Расходы, Охват, Подписчики, ROMI — с микро-трендом sparkline и delta %
-- График расходов по каналам (stacked area, Recharts) — большой, glass card
-- Охваты по неделям (gradient area chart)
-- Подписчики по соцсетям (multi-line)
-- ROMI по кампаниям (горизонтальный bar)
-- "Лучшие каналы" — таблица с прогресс-барами
-- "Лучшие продукты (SKU)" — карточки с product image, ROI, sales
-- Notifications side-panel (Sheet) — уведомления о задачах, бюджетах, отчётах
+```
+src/
+  lib/
+    tasks.functions.ts
+    admin.functions.ts
+    profile.functions.ts
+  routes/
+    _app.tasks.tsx          (переписан, auth-only заглушка)
+    _app.admin.tsx          (новый, admin-only)
+    _app.profile.tsx        (новый)
+  components/
+    tasks/
+      TaskCard.tsx
+      TaskColumn.tsx
+      TaskDialog.tsx
+      TaskDetailSheet.tsx
+      TaskAttachmentUploader.tsx
+    admin/
+      UsersTable.tsx
+      EditEmployeeDialog.tsx
+```
 
-**Соцсети:** таблица постов с фильтрами (платформа, период, статус), engagement charts по платформам (VK, Telegram, YouTube, Instagram, Dzen)
+## Безопасность
 
-**Блогеры:** карточки + таблица — имя, платформа, охват, CPM, ROI, статус сделки, фильтр по нише (садоводы/дачники/ландшафт)
+- Роли — отдельная таблица `user_roles`, проверка через `has_role()` security definer (защита от рекурсии и эскалации).
+- Все мутации идут через server functions с `requireSupabaseAuth` + явная проверка роли где нужно.
+- RLS — backstop, основной гейт — серверная логика.
+- Bootstrap admin для `dgolub@lamatorf.ru` через миграцию (insert при наличии пользователя + триггер на будущее).
 
-**Маркетплейсы:** Ozon / Wildberries / Я.Маркет — продажи, рейтинг, выкуп, реклама
-
-**Бюджеты:** план vs факт по каналам (bar), pie распределения, таблица транзакций
-
-**Задачи:** Kanban-доска (Todo / In Progress / Review / Done) + список с фильтрами по исполнителю/приоритету
-
-**Календарь:** месячная сетка с маркетинговыми активностями (посевная, акции, выставки), цветовые категории
-
-**SKU:** каталог продукции (удобрения, грунты, семена, инструменты) — таблица с image, цена, остатки, ROI, продажи по каналам
-
-## Mock-данные
-
-Реалистичные данные для садоводческого бренда:
-- SKU: «Биогумус Premium 5л», «Удобрение для роз», «Грунт универсальный», «Семена газона Eco»
-- Сезонность (пик весной), каналы под российский рынок
-- Файл `src/lib/mock-data.ts` — централизованно, легко заменить на Supabase запросы позже
-
-## Supabase-ready архитектура
-
-- Все списки данных идут через `useQuery` с `queryOptions` фабриками в `src/lib/queries.ts`
-- Mock возвращается через async-функции, имитирующие fetch
-- Замена на Supabase = одна строка в queryFn (`supabase.from('...').select()`)
-- Cloud не включаю сейчас — структура готова, активируем когда понадобится реальная БД
-
-## Технические детали
-
-- **Charts:** Recharts (входит в shadcn chart) — Area, Bar, Line, Pie, Radial
-- **Анимации:** framer-motion для card mount, stagger у KPI
-- **Адаптив:** sidebar становится sheet на мобильных, KPI grid → 2 кол → 1 кол, графики full-width
-- **Date range:** shadcn Calendar в Popover с `pointer-events-auto`
-- **Filters:** Select / Combobox / Toggle Group
-- **Notifications:** Sheet справа, badge на иконке колокольчика
-
-## Что в итоге увидит пользователь
-
-Production-grade SaaS с фирменным «зелёным» характером бренда удобрений: премиум, но живой, природный. Все 8 разделов рабочие со своими таблицами, фильтрами и графиками. Готов к подключению Cloud в любой момент.
+Готов реализовать. Подтвердите план — и переключаемся в build.
