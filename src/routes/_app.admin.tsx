@@ -9,11 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Lock, Shield, Pencil } from "lucide-react";
+import { Loader2, Lock, Shield, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import type { Profile, AppRole, EmployeePosition } from "@/lib/tasks-types";
+import type { Profile, AppRole, PositionRow } from "@/lib/tasks-types";
 import { POSITION_LABELS, ROLE_LABELS, initials } from "@/lib/tasks-types";
 
 export const Route = createFileRoute("/_app/admin")({
@@ -46,19 +46,22 @@ type Row = Profile & { roles: AppRole[] };
 
 function AdminTable() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [positions, setPositions] = useState<PositionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Row | null>(null);
 
   const load = async () => {
-    const [p, r] = await Promise.all([
+    const [p, r, pos] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at"),
       supabase.from("user_roles").select("user_id, role"),
+      supabase.from("positions").select("*").order("label"),
     ]);
     const rolesByUser: Record<string, AppRole[]> = {};
     (r.data ?? []).forEach((x: any) => {
       (rolesByUser[x.user_id] ??= []).push(x.role);
     });
     setRows(((p.data ?? []) as Profile[]).map((pr) => ({ ...pr, roles: rolesByUser[pr.id] ?? [] })));
+    setPositions((pos.data ?? []) as PositionRow[]);
     setLoading(false);
   };
 
@@ -78,6 +81,8 @@ function AdminTable() {
         {loading ? (
           <div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
         ) : (
+        <>
+          <PositionsManager positions={positions} onChanged={load} />
           <div className="rounded-2xl border bg-card">
             <Table>
               <TableHeader>
@@ -101,7 +106,7 @@ function AdminTable() {
                     </TableCell>
                     <TableCell className="text-sm">{u.email}</TableCell>
                     <TableCell className="text-sm">{u.phone || <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell className="text-sm">{u.position ? POSITION_LABELS[u.position] : <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-sm">{u.position ? (positions.find(p => p.key === u.position)?.label ?? POSITION_LABELS[u.position] ?? u.position) : <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell>
                       <Select value={u.roles[0] ?? "viewer"} onValueChange={(v) => setRole(u.id, v as AppRole)}>
                         <SelectTrigger className="h-8 w-[160px]"><SelectValue /></SelectTrigger>
@@ -120,14 +125,71 @@ function AdminTable() {
               </TableBody>
             </Table>
           </div>
+        </>
         )}
       </main>
-      <EditDialog row={editing} onClose={() => setEditing(null)} onSaved={load} />
+      <EditDialog row={editing} positions={positions} onClose={() => setEditing(null)} onSaved={load} />
     </>
   );
 }
 
-function EditDialog({ row, onClose, onSaved }: { row: Row | null; onClose: () => void; onSaved: () => void }) {
+function PositionsManager({ positions, onChanged }: { positions: PositionRow[]; onChanged: () => void }) {
+  const [label, setLabel] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const slug = (s: string) =>
+    s.toLowerCase().trim()
+      .replace(/[а-я]/g, (c) => ({ а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"e",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"h",ц:"c",ч:"ch",ш:"sh",щ:"sch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya" }[c] ?? c))
+      .replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || `pos_${Date.now()}`;
+
+  const add = async () => {
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    const { error } = await supabase.from("positions").insert({ key: slug(trimmed), label: trimmed });
+    setSaving(false);
+    if (error) toast.error(error.message);
+    else { toast.success("Должность добавлена"); setLabel(""); onChanged(); }
+  };
+
+  const remove = async (id: string) => {
+    const { error } = await supabase.from("positions").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Должность удалена"); onChanged(); }
+  };
+
+  return (
+    <div className="rounded-2xl border bg-card p-4 md:p-6">
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold">Должности</h2>
+          <p className="text-xs text-muted-foreground">Добавляйте или удаляйте должности для сотрудников</p>
+        </div>
+      </div>
+      <div className="mb-4 flex gap-2">
+        <Input placeholder="Например, Контент-менеджер" value={label} maxLength={60}
+          onChange={(e) => setLabel(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
+        <Button onClick={add} disabled={saving || !label.trim()} className="gradient-leaf text-white">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="mr-1 h-4 w-4" />Добавить</>}
+        </Button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {positions.length === 0 && <span className="text-sm text-muted-foreground">Должностей пока нет</span>}
+        {positions.map((p) => (
+          <Badge key={p.id} variant="secondary" className="gap-1 py-1 pl-3 pr-1 text-sm">
+            {p.label}
+            <Button size="sm" variant="ghost" className="h-5 w-5 p-0 hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => remove(p.id)}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EditDialog({ row, positions, onClose, onSaved }: { row: Row | null; positions: PositionRow[]; onClose: () => void; onSaved: () => void }) {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [position, setPosition] = useState<string>("none");
@@ -147,7 +209,7 @@ function EditDialog({ row, onClose, onSaved }: { row: Row | null; onClose: () =>
     const { error } = await supabase.from("profiles").update({
       full_name: fullName.trim() || null,
       phone: phone.trim() || null,
-      position: position === "none" ? null : (position as EmployeePosition),
+      position: position === "none" ? null : position,
     }).eq("id", row.id);
     setSaving(false);
     if (error) toast.error(error.message);
@@ -167,10 +229,9 @@ function EditDialog({ row, onClose, onSaved }: { row: Row | null; onClose: () =>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Не указана</SelectItem>
-                <SelectItem value="marketolog">{POSITION_LABELS.marketolog}</SelectItem>
-                <SelectItem value="product_manager">{POSITION_LABELS.product_manager}</SelectItem>
-                <SelectItem value="smm_manager">{POSITION_LABELS.smm_manager}</SelectItem>
-                <SelectItem value="designer">{POSITION_LABELS.designer}</SelectItem>
+                {positions.map((p) => (
+                  <SelectItem key={p.id} value={p.key}>{p.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
