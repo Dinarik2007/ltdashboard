@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Bell, Search, Calendar as CalendarIcon, Sparkles, Moon, Sun } from "lucide-react";
+import { Bell, Search, Calendar as CalendarIcon, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { notifications } from "@/lib/mock-data";
 import { useTheme } from "@/hooks/use-theme";
+import { ReportDialog } from "@/components/report-dialog";
+import type { Period } from "@/lib/report-export";
 
 const levelColor: Record<string, string> = {
   warn: "bg-amber-100 text-amber-800 border-amber-200",
@@ -17,7 +19,7 @@ const levelColor: Record<string, string> = {
 };
 
 export function Topbar({ title, subtitle }: { title: string; subtitle?: string }) {
-  const [period, setPeriod] = React.useState("30");
+  const [period, setPeriod] = React.useState<Period>("30");
   const { theme, toggleTheme } = useTheme();
   return (
     <header className="sticky top-0 z-30 flex flex-col gap-3 border-b border-border/60 bg-background/70 px-4 py-3 backdrop-blur-xl md:flex-row md:items-center md:justify-between md:px-8 md:py-4">
@@ -33,7 +35,7 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Поиск кампаний, SKU, блогеров…" className="h-10 w-[280px] rounded-xl border-border/60 bg-white/70 pl-9 text-sm" />
         </div>
-        <Select value={period} onValueChange={setPeriod}>
+        <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
           <SelectTrigger className="h-10 rounded-xl border-border/60 bg-white/70 text-sm">
             <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
             <SelectValue />
@@ -45,9 +47,7 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
             <SelectItem value="ytd">С начала года</SelectItem>
           </SelectContent>
         </Select>
-        <Button className="h-10 rounded-xl gradient-leaf text-primary-foreground shadow-md shadow-accent/30 hover:opacity-95">
-          <Sparkles className="mr-2 h-4 w-4" /> Отчёт
-        </Button>
+        <ReportDialog initialPeriod={period} />
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon" className="relative h-10 w-10 rounded-xl border-border/60 bg-white/70">
