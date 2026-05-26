@@ -16,10 +16,12 @@ import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppTasksRouteImport } from './routes/_app.tasks'
 import { Route as AppSocialRouteImport } from './routes/_app.social'
 import { Route as AppSkuRouteImport } from './routes/_app.sku'
+import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppMarketplacesRouteImport } from './routes/_app.marketplaces'
 import { Route as AppCalendarRouteImport } from './routes/_app.calendar'
 import { Route as AppBudgetsRouteImport } from './routes/_app.budgets'
 import { Route as AppBloggersRouteImport } from './routes/_app.bloggers'
+import { Route as AppAdminRouteImport } from './routes/_app.admin'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -55,6 +57,11 @@ const AppSkuRoute = AppSkuRouteImport.update({
   path: '/sku',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMarketplacesRoute = AppMarketplacesRouteImport.update({
   id: '/marketplaces',
   path: '/marketplaces',
@@ -75,15 +82,22 @@ const AppBloggersRoute = AppBloggersRouteImport.update({
   path: '/bloggers',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin': typeof AppAdminRoute
   '/bloggers': typeof AppBloggersRoute
   '/budgets': typeof AppBudgetsRoute
   '/calendar': typeof AppCalendarRoute
   '/marketplaces': typeof AppMarketplacesRoute
+  '/profile': typeof AppProfileRoute
   '/sku': typeof AppSkuRoute
   '/social': typeof AppSocialRoute
   '/tasks': typeof AppTasksRoute
@@ -91,10 +105,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin': typeof AppAdminRoute
   '/bloggers': typeof AppBloggersRoute
   '/budgets': typeof AppBudgetsRoute
   '/calendar': typeof AppCalendarRoute
   '/marketplaces': typeof AppMarketplacesRoute
+  '/profile': typeof AppProfileRoute
   '/sku': typeof AppSkuRoute
   '/social': typeof AppSocialRoute
   '/tasks': typeof AppTasksRoute
@@ -105,10 +121,12 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_app/admin': typeof AppAdminRoute
   '/_app/bloggers': typeof AppBloggersRoute
   '/_app/budgets': typeof AppBudgetsRoute
   '/_app/calendar': typeof AppCalendarRoute
   '/_app/marketplaces': typeof AppMarketplacesRoute
+  '/_app/profile': typeof AppProfileRoute
   '/_app/sku': typeof AppSkuRoute
   '/_app/social': typeof AppSocialRoute
   '/_app/tasks': typeof AppTasksRoute
@@ -120,10 +138,12 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
+    | '/admin'
     | '/bloggers'
     | '/budgets'
     | '/calendar'
     | '/marketplaces'
+    | '/profile'
     | '/sku'
     | '/social'
     | '/tasks'
@@ -131,10 +151,12 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/reset-password'
+    | '/admin'
     | '/bloggers'
     | '/budgets'
     | '/calendar'
     | '/marketplaces'
+    | '/profile'
     | '/sku'
     | '/social'
     | '/tasks'
@@ -144,10 +166,12 @@ export interface FileRouteTypes {
     | '/_app'
     | '/auth'
     | '/reset-password'
+    | '/_app/admin'
     | '/_app/bloggers'
     | '/_app/budgets'
     | '/_app/calendar'
     | '/_app/marketplaces'
+    | '/_app/profile'
     | '/_app/sku'
     | '/_app/social'
     | '/_app/tasks'
@@ -211,6 +235,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSkuRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/profile': {
+      id: '/_app/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/marketplaces': {
       id: '/_app/marketplaces'
       path: '/marketplaces'
@@ -239,14 +270,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBloggersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/admin': {
+      id: '/_app/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAdminRoute: typeof AppAdminRoute
   AppBloggersRoute: typeof AppBloggersRoute
   AppBudgetsRoute: typeof AppBudgetsRoute
   AppCalendarRoute: typeof AppCalendarRoute
   AppMarketplacesRoute: typeof AppMarketplacesRoute
+  AppProfileRoute: typeof AppProfileRoute
   AppSkuRoute: typeof AppSkuRoute
   AppSocialRoute: typeof AppSocialRoute
   AppTasksRoute: typeof AppTasksRoute
@@ -254,10 +294,12 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAdminRoute: AppAdminRoute,
   AppBloggersRoute: AppBloggersRoute,
   AppBudgetsRoute: AppBudgetsRoute,
   AppCalendarRoute: AppCalendarRoute,
   AppMarketplacesRoute: AppMarketplacesRoute,
+  AppProfileRoute: AppProfileRoute,
   AppSkuRoute: AppSkuRoute,
   AppSocialRoute: AppSocialRoute,
   AppTasksRoute: AppTasksRoute,
@@ -274,13 +316,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

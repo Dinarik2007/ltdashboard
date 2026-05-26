@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Share2, Users, ShoppingBag, Wallet, CheckSquare, Calendar as CalendarIcon, Package, Sprout, LogOut, LogIn,
+  LayoutDashboard, Share2, Users, ShoppingBag, Wallet, CheckSquare, Calendar as CalendarIcon, Package, Sprout, LogOut, LogIn, Shield, UserCircle,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
-const items = [
+const baseItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Соцсети", url: "/social", icon: Share2 },
   { title: "Блогеры", url: "/bloggers", icon: Users },
@@ -21,12 +21,18 @@ const items = [
   { title: "SKU", url: "/sku", icon: Package },
 ];
 
-export function AppSidebar({ userEmail }: { userEmail?: string | null }) {
+export function AppSidebar({ userEmail, isAdmin }: { userEmail?: string | null; isAdmin?: boolean }) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (path: string) => (path === "/" ? currentPath === "/" : currentPath.startsWith(path));
   const navigate = useNavigate();
+
+  const items = [
+    ...baseItems,
+    ...(userEmail ? [{ title: "Профиль", url: "/profile", icon: UserCircle }] : []),
+    ...(isAdmin ? [{ title: "Админка", url: "/admin", icon: Shield }] : []),
+  ];
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
