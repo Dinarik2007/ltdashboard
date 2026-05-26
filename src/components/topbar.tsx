@@ -73,6 +73,9 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
             </div>
           </SheetContent>
         </Sheet>
+        <Button variant="outline" size="icon" onClick={toggleTheme} className="h-10 w-10 rounded-xl border-border/60 bg-white/70">
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </Button>
         <Avatar className="h-10 w-10 ring-2 ring-accent/30">
           <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">МК</AvatarFallback>
         </Avatar>
