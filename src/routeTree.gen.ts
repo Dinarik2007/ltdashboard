@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as ApiAiChatRouteImport } from './routes/api/ai-chat'
 import { Route as AppTasksRouteImport } from './routes/_app.tasks'
 import { Route as AppSocialRouteImport } from './routes/_app.social'
 import { Route as AppSkuRouteImport } from './routes/_app.sku'
@@ -41,6 +42,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiAiChatRoute = ApiAiChatRouteImport.update({
+  id: '/api/ai-chat',
+  path: '/api/ai-chat',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppTasksRoute = AppTasksRouteImport.update({
   id: '/tasks',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/sku': typeof AppSkuRoute
   '/social': typeof AppSocialRoute
   '/tasks': typeof AppTasksRoute
+  '/api/ai-chat': typeof ApiAiChatRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/sku': typeof AppSkuRoute
   '/social': typeof AppSocialRoute
   '/tasks': typeof AppTasksRoute
+  '/api/ai-chat': typeof ApiAiChatRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/_app/sku': typeof AppSkuRoute
   '/_app/social': typeof AppSocialRoute
   '/_app/tasks': typeof AppTasksRoute
+  '/api/ai-chat': typeof ApiAiChatRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/sku'
     | '/social'
     | '/tasks'
+    | '/api/ai-chat'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/sku'
     | '/social'
     | '/tasks'
+    | '/api/ai-chat'
     | '/'
   id:
     | '__root__'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/_app/sku'
     | '/_app/social'
     | '/_app/tasks'
+    | '/api/ai-chat'
     | '/_app/'
   fileRoutesById: FileRoutesById
 }
@@ -182,6 +194,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiAiChatRoute: typeof ApiAiChatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -213,6 +226,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/ai-chat': {
+      id: '/api/ai-chat'
+      path: '/api/ai-chat'
+      fullPath: '/api/ai-chat'
+      preLoaderRoute: typeof ApiAiChatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/tasks': {
       id: '/_app/tasks'
@@ -312,6 +332,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiAiChatRoute: ApiAiChatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
