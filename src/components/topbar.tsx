@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Bell, Search, Calendar as CalendarIcon, Sparkles } from "lucide-react";
+import { Bell, Search, Calendar as CalendarIcon, Sparkles, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { notifications } from "@/lib/mock-data";
+import { useTheme } from "@/hooks/use-theme";
 
 const levelColor: Record<string, string> = {
   warn: "bg-amber-100 text-amber-800 border-amber-200",
