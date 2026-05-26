@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Bell, Search, Calendar as CalendarIcon, Sparkles } from "lucide-react";
+import { Bell, Search, Calendar as CalendarIcon, Sparkles, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { notifications } from "@/lib/mock-data";
+import { useTheme } from "@/hooks/use-theme";
 
 const levelColor: Record<string, string> = {
   warn: "bg-amber-100 text-amber-800 border-amber-200",
@@ -17,6 +18,7 @@ const levelColor: Record<string, string> = {
 
 export function Topbar({ title, subtitle }: { title: string; subtitle?: string }) {
   const [period, setPeriod] = React.useState("30");
+  const { theme, toggleTheme } = useTheme();
   return (
     <header className="sticky top-0 z-30 flex flex-col gap-3 border-b border-border/60 bg-background/70 px-4 py-3 backdrop-blur-xl md:flex-row md:items-center md:justify-between md:px-8 md:py-4">
       <div className="flex items-center gap-3">
@@ -71,6 +73,9 @@ export function Topbar({ title, subtitle }: { title: string; subtitle?: string }
             </div>
           </SheetContent>
         </Sheet>
+        <Button variant="outline" size="icon" onClick={toggleTheme} className="h-10 w-10 rounded-xl border-border/60 bg-white/70">
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </Button>
         <Avatar className="h-10 w-10 ring-2 ring-accent/30">
           <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">МК</AvatarFallback>
         </Avatar>
