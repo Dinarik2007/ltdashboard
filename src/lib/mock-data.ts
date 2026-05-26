@@ -121,18 +121,6 @@ export const budgetTransactions = [
   { id: "tx-6", date: "2026-05-17", channel: "Instagram", campaign: "Розы и пионы", amount: "₽ 72 000", status: "Отклонено" },
 ];
 
-export type TaskStatus = "Todo" | "In Progress" | "Review" | "Done";
-export const tasks = [
-  { id: "t1", title: "Согласовать креативы «Газон Eco»", assignee: "А. Иванова", priority: "High", status: "In Progress" as TaskStatus, due: "2026-05-26" },
-  { id: "t2", title: "Бриф для @sad_i_ogorod", assignee: "М. Петров", priority: "Med", status: "Todo" as TaskStatus, due: "2026-05-27" },
-  { id: "t3", title: "Отчёт по Telegram за неделю", assignee: "Е. Сидорова", priority: "Low", status: "Review" as TaskStatus, due: "2026-05-25" },
-  { id: "t4", title: "Запуск рекламы на WB", assignee: "Д. Кузнецов", priority: "High", status: "In Progress" as TaskStatus, due: "2026-05-28" },
-  { id: "t5", title: "Анализ продаж биогумуса", assignee: "А. Иванова", priority: "Med", status: "Done" as TaskStatus, due: "2026-05-20" },
-  { id: "t6", title: "Календарь публикаций на июнь", assignee: "М. Петров", priority: "Med", status: "Todo" as TaskStatus, due: "2026-05-30" },
-  { id: "t7", title: "Согласование бюджета Q3", assignee: "Е. Сидорова", priority: "High", status: "Review" as TaskStatus, due: "2026-05-29" },
-  { id: "t8", title: "Обновить SKU «Гортензия»", assignee: "Д. Кузнецов", priority: "Low", status: "Done" as TaskStatus, due: "2026-05-19" },
-];
-
 export const calendarEvents = [
   { day: 3, title: "Запуск «Весна»", type: "campaign" },
   { day: 5, title: "Пост VK: подкормка", type: "post" },
