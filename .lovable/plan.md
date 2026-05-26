@@ -1,154 +1,96 @@
 
-# План: Tasks → Supabase + Админка + Профили сотрудников
+# AI Marketing Assistant
+
+Плавающая AI-панель внутри `_app` layout: кнопка справа снизу → premium chat panel с историей, quick actions и markdown. Используем **Lovable AI Gateway** (не OpenAI напрямую — у нас уже есть `LOVABLE_API_KEY`, не требует от пользователя ключей).
 
 ## 1. База данных
 
-### Профили и роли
+Таблица `ai_conversations` (одна запись = одно сообщение):
+- `id` uuid PK
+- `user_id` uuid (auth.uid())
+- `role` text: `user` | `assistant` | `system`
+- `message` text
+- `conversation_id` uuid — группировка в треды (новый чат = новый id)
+- `created_at` timestamptz
 
-**`profiles`** (расширенный профиль сотрудника, 1:1 с auth.users):
-- `id` uuid PK = auth.users.id
-- `email` text
-- `full_name` text (ФИО)
-- `phone` text
-- `position` enum (`marketolog`, `product_manager`, `smm_manager`, `designer`) — nullable
-- `created_at`, `updated_at`
+RLS: только авторизованные, видят/пишут/удаляют **только свои** записи (`auth.uid() = user_id`). GRANT для `authenticated` + `service_role`. Realtime не нужен (стримим напрямую из edge).
 
-Автосоздание через триггер `on auth.users insert` → `handle_new_user()`.
+## 2. Backend — стриминговый чат
 
-**`app_role`** enum: `admin`, `editor`, `viewer`.
+Поскольку на этом стеке мы используем TanStack server functions, а Lovable AI требует SSE-стриминга, делаю **server route** `src/routes/api/ai-chat.ts` (POST):
+- Валидация Zod: `{ messages: [{role, content}], conversationId, mode? }`
+- Проверка auth по bearer-token → `userId`
+- Системный промпт зависит от `mode` (post / seo / wb-ozon / blogger-brief / content-plan / pr / marketing-analysis / sku / general) — все промпты на русском, заточены под маркетинг-команду
+- Контекст: подмешиваем последние ~20 сообщений из `ai_conversations` для этого `conversationId`
+- Вызов `https://ai.gateway.lovable.dev/v1/chat/completions` с `google/gemini-3-flash-preview`, `stream: true`
+- Обработка 429/402 → понятные ошибки клиенту
+- После завершения стрима сохраняем `user` + `assistant` сообщения в `ai_conversations` через `supabaseAdmin`
 
-**`user_roles`** (отдельная таблица — критично для безопасности):
-- `id`, `user_id` (FK auth.users), `role` app_role, UNIQUE(user_id, role)
+Возврат — SSE-стрим в `text/event-stream` (парсим на клиенте token-by-token).
 
-**Security definer функция** `has_role(_user_id, _role)`.
+## 3. UI
 
-**Bootstrap admin**: SQL вставит роль `admin` для пользователя с email `dgolub@lamatorf.ru` (если он уже зарегистрирован — сразу; если нет — создадим триггер, который при регистрации этого email сразу даст admin).
+### Floating button
+- Компонент `<AIAssistantLauncher />` монтируется в `src/routes/_app.tsx` (Shell) — виден на всех app-страницах для авторизованных
+- Фикс справа снизу (`fixed bottom-6 right-6 z-50`), градиентный круг 56×56, иконка Sparkles, мягкое свечение/pulse
+- Скрыт для неавторизованных
 
-**Дефолтная роль** новых пользователей: `viewer` (повышает админ).
+### Chat panel
+- Sheet справа (shadcn Sheet) шириной ~480px на desktop, full-width на mobile
+- **Header**: title "AI Marketing Assistant", переключатель «Новый чат», список прошлых тредов в dropdown
+- **Quick actions** (видны на пустом чате, чипы-кнопки):
+  - 📝 Создать пост
+  - 🔍 SEO для Ozon
+  - 🎬 ТЗ блогеру
+  - 📊 Анализ ROMI
+  - 📅 Контент план
+  - 🎥 Идеи Reels
+  Каждая → префилл промпта + `mode` для системного промпта
+- **Prompt suggestions** под полем ввода (3 динамические подсказки)
+- **Chat bubbles**: user — справа, акцентный градиент; assistant — слева, surface; round 2xl, аватары
+- **Markdown**: `react-markdown` + `remark-gfm` (уже есть `prose` классы tailwind)
+- **Typing animation**: пульсирующие 3 точки пока ждём первый токен; стриминговые токены подставляем в последний assistant-bubble
+- **Composer**: textarea с auto-resize, Enter — отправить, Shift+Enter — newline, кнопка Send (disabled во время стрима), кнопка остановки (AbortController)
+- Toast (sonner) на ошибки (429 / 402 / сеть)
 
-### Tasks
+### Premium стиль
+- Тонкий градиентный border у панели, blur-backdrop, semantic tokens из `src/styles.css` (никаких хардкод-цветов)
+- Иконки Lucide: Sparkles, Send, Square (stop), Plus (новый чат), History
 
-**`tasks`**: id, title, description, status (`todo`/`in_progress`/`review`/`done`), priority (`low`/`med`/`high`), task_type, due_date, position int, assignee_id, created_by, created_at, updated_at.
-
-**`task_comments`**: id, task_id (cascade), user_id, comment, created_at.
-
-**`task_attachments`**: id, task_id (cascade), file_url, file_name, uploaded_by, created_at.
-
-**Storage bucket** `task-attachments` (приватный).
-
-**Realtime**: добавить tasks, task_comments, task_attachments в `supabase_realtime` + `REPLICA IDENTITY FULL`.
-
-**Триггер** `update_updated_at_column` на tasks и profiles.
-
-### RLS политики
-
-**profiles**:
-- SELECT: авторизованные видят все профили (нужно для отображения assignee)
-- UPDATE: пользователь может править свой профиль ИЛИ admin может править любой
-- INSERT/DELETE: только admin
-
-**user_roles**:
-- SELECT: авторизованные видят все роли (нужно для бейджа в UI)
-- INSERT/UPDATE/DELETE: только admin (`has_role(auth.uid(),'admin')`)
-
-**tasks / task_comments / task_attachments**:
-- SELECT: только авторизованные (`auth.uid() IS NOT NULL`)
-- INSERT/UPDATE/DELETE: `has_role(admin)` OR `has_role(editor)`
-- viewer — read-only
-
-**Storage `task-attachments`**:
-- SELECT/INSERT: авторизованные
-- DELETE: admin/editor
-
-## 2. Server functions (`src/lib/`)
-
-`tasks.functions.ts` (защищены `requireSupabaseAuth`, валидация Zod):
-- createTask, updateTask (включая status/position для DnD), deleteTask
-- addComment, deleteComment
-- addAttachment (запись метаданных), deleteAttachment
-
-`admin.functions.ts` (защищены `requireSupabaseAuth` + проверка `has_role(admin)` внутри):
-- listUsers — все profiles + их роли
-- assignRole(user_id, role), revokeRole(user_id, role)
-- updateProfile(user_id, {full_name, phone, position}) — для админа
-
-`profile.functions.ts`:
-- updateMyProfile({full_name, phone, position}) — для текущего пользователя
-
-## 3. Маршруты
-
-### Защита авторизацией
-
-Создать pathless layout `src/routes/_authenticated.tsx`:
-- `beforeLoad`: если нет сессии → `redirect('/auth')`
-
-Перенести защищённые роуты:
-- `src/routes/_app.tasks.tsx` → `src/routes/_app/_authenticated.tasks.tsx`
-  (или оставить под `_app` + добавить child-level `beforeLoad`)
-- Дашборд и остальные остаются публичными как сейчас.
-
-Простой вариант: внутри `_app.tasks.tsx` добавить компонентный гард → если нет сессии, показать заглушку «Войдите для доступа к задачам» + кнопка на /auth. Соответствует уже существующему гостевому паттерну в проекте.
-
-### Новые роуты
-
-- `src/routes/_app.admin.tsx` — админка (только admin, иначе 403)
-  - Таблица всех сотрудников: ФИО, email, телефон, должность, роли
-  - Действия: изменить роль (select admin/editor/viewer), редактировать должность/ФИО/телефон через модалку
-- `src/routes/_app.profile.tsx` — личный кабинет: ФИО, телефон, должность (read-only для viewer? — нет, свой профиль может править любой)
-
-Пункт «Админка» в sidebar показывается только если `has_role(admin)`. Пункт «Профиль» — всем авторизованным.
-
-## 4. UI Tasks (канбан)
-
-- Канбан 4 колонки, карточки tasks из БД через `useQuery` + realtime subscription (один канал на 3 таблицы → `invalidateQueries(['tasks'])`).
-- **Drag & drop** — `@dnd-kit/core` + `@dnd-kit/sortable`. Drop → `updateTask({status, position})`.
-- **Модалка создания/редактирования**: title, description, priority, status, due_date, assignee (select из profiles), task_type.
-- **Sheet деталей**: описание, activity timeline (комменты + системные события), форма комментария, секция вложений с превью (image → `<img>`, остальные → иконка).
-- **Avatar assignee** на карточке (инициалы из full_name или email).
-- **Цветные приоритеты** (High=rose, Med=amber, Low=emerald).
-- **Toast** (sonner) на все мутации.
-- Viewer (только просмотр): кнопки create/edit/delete disabled с тултипом.
-- Неавторизованные: видят заглушку с кнопкой Войти.
+## 4. История чатов
+- `useQuery(['ai-threads', userId])` — список тредов (DISTINCT conversation_id с last message preview/created_at) через серверную функцию `listThreads`
+- `useQuery(['ai-thread', conversationId])` — сообщения треда
+- При открытии панели — последний тред или пустой новый
+- Кнопка «Новый чат» генерирует `crypto.randomUUID()` для `conversationId`
+- Удаление треда — server fn `deleteThread`
 
 ## 5. Зависимости
-
 ```
-bun add @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities date-fns
+bun add react-markdown remark-gfm
 ```
 
-## 6. Удаление mock
-
-Удалить `tasks` и `TaskStatus` из `src/lib/mock-data.ts`.
-
-## Структура файлов
-
+## 6. Структура файлов
 ```
 src/
+  components/ai/
+    AIAssistantLauncher.tsx     # floating button + Sheet
+    AIChatPanel.tsx             # вся chat UI
+    AIMessageBubble.tsx         # markdown bubble
+    AIQuickActions.tsx          # 6 chip-кнопок
+    AIThreadList.tsx            # история тредов
   lib/
-    tasks.functions.ts
-    admin.functions.ts
-    profile.functions.ts
+    ai-chat.functions.ts        # listThreads, getThread, deleteThread (createServerFn)
+    ai-prompts.ts               # системные промпты по mode
+    ai-stream.ts                # клиентский SSE-парсер
   routes/
-    _app.tasks.tsx          (переписан, auth-only заглушка)
-    _app.admin.tsx          (новый, admin-only)
-    _app.profile.tsx        (новый)
-  components/
-    tasks/
-      TaskCard.tsx
-      TaskColumn.tsx
-      TaskDialog.tsx
-      TaskDetailSheet.tsx
-      TaskAttachmentUploader.tsx
-    admin/
-      UsersTable.tsx
-      EditEmployeeDialog.tsx
+    api/ai-chat.ts              # server route, POST, SSE
+    _app.tsx                    # +<AIAssistantLauncher/>
 ```
 
 ## Безопасность
+- API endpoint требует auth-токен (проверяем через `supabaseAdmin.auth.getUser(token)`)
+- `LOVABLE_API_KEY` читается только на сервере (`process.env`)
+- RLS на `ai_conversations` → один пользователь видит только свои
+- Промпты на сервере — клиент только указывает `mode`
 
-- Роли — отдельная таблица `user_roles`, проверка через `has_role()` security definer (защита от рекурсии и эскалации).
-- Все мутации идут через server functions с `requireSupabaseAuth` + явная проверка роли где нужно.
-- RLS — backstop, основной гейт — серверная логика.
-- Bootstrap admin для `dgolub@lamatorf.ru` через миграцию (insert при наличии пользователя + триггер на будущее).
-
-Готов реализовать. Подтвердите план — и переключаемся в build.
+Подтверди план — переключаемся в build.
