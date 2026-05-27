@@ -230,7 +230,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          full_name: string | null
+          id: string | null
+          position: string | null
+        }
+        Insert: {
+          full_name?: string | null
+          id?: string | null
+          position?: string | null
+        }
+        Update: {
+          full_name?: string | null
+          id?: string | null
+          position?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
