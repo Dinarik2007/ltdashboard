@@ -84,8 +84,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Dasboard of marketing" },
       { name: "twitter:description", content: "Veridian Growth Hub is a modern marketing dashboard for fertilizer and garden product companies." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5eaab87b-ac79-4e3c-8709-600e6d38c9cd/id-preview-234b16aa--50e284ff-701f-41cc-a801-a5d6619cf1d3.lovable.app-1779716908251.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5eaab87b-ac79-4e3c-8709-600e6d38c9cd/id-preview-234b16aa--50e284ff-701f-41cc-a801-a5d6619cf1d3.lovable.app-1779716908251.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/8c7b050c-b8f9-452a-8c1b-f69c88486a20" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/8c7b050c-b8f9-452a-8c1b-f69c88486a20" },
     ],
     links: [
       {
