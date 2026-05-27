@@ -63,7 +63,7 @@ function TasksBoard({ canEdit }: { canEdit: boolean }) {
   const reload = async () => {
     const [t, p, c, a] = await Promise.all([
       supabase.from("tasks").select("*").order("position"),
-      supabase.from("profiles").select("*"),
+      supabase.from("profiles").select("id, full_name, position"),
       supabase.from("task_comments").select("task_id"),
       supabase.from("task_attachments").select("task_id"),
     ]);

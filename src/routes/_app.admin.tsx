@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import type { Profile, AppRole, PositionRow } from "@/lib/tasks-types";
 import { POSITION_LABELS, ROLE_LABELS, initials } from "@/lib/tasks-types";
+import { getAllProfilesAdmin } from "@/lib/profiles.functions";
 
 export const Route = createFileRoute("/_app/admin")({
   head: () => ({ meta: [{ title: "Админка — Marketing" }] }),
@@ -52,7 +53,7 @@ function AdminTable() {
 
   const load = async () => {
     const [p, r, pos] = await Promise.all([
-      supabase.from("profiles").select("*").order("created_at"),
+      getAllProfilesAdmin(),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("positions").select("*").order("label"),
     ]);
@@ -60,7 +61,7 @@ function AdminTable() {
     (r.data ?? []).forEach((x: any) => {
       (rolesByUser[x.user_id] ??= []).push(x.role);
     });
-    setRows(((p.data ?? []) as Profile[]).map((pr) => ({ ...pr, roles: rolesByUser[pr.id] ?? [] })));
+    setRows(((p ?? []) as Profile[]).map((pr) => ({ ...pr, roles: rolesByUser[pr.id] ?? [] })));
     setPositions((pos.data ?? []) as PositionRow[]);
     setLoading(false);
   };

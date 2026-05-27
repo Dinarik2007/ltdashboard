@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { ROLE_LABELS } from "@/lib/tasks-types";
 import type { PositionRow } from "@/lib/tasks-types";
+import { getMyProfile } from "@/lib/profiles.functions";
 
 export const Route = createFileRoute("/_app/profile")({
   head: () => ({ meta: [{ title: "Профиль" }] }),
@@ -29,9 +30,9 @@ function ProfilePage() {
   useEffect(() => {
     if (!userId) return;
     Promise.all([
-      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+      getMyProfile(),
       supabase.from("positions").select("*").order("label"),
-    ]).then(([{ data }, { data: pos }]) => {
+    ]).then(([data, { data: pos }]) => {
       if (data) {
         setFullName(data.full_name ?? "");
         setPhone(data.phone ?? "");
